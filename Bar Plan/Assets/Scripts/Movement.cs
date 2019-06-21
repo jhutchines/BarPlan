@@ -11,20 +11,28 @@ public class Movement : MonoBehaviour
 
     private float fl_rotation_x;
 
-    public GameObject objectSelected;
+    [HideInInspector] public GameObject objectSelected;
+    public GameObject overheadCamera;
+    public bool bl_mainCamera = true;
 
     // Start is called before the first frame update
     void Start()
     {
         Vector3 cam_rotation = transform.GetChild(0).transform.localRotation.eulerAngles;
         fl_rotation_x = cam_rotation.x;
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
     }
 
     // Update is called once per frame
     void Update()
     {
         PlayerMovement();
-        SelectObject();
+        CameraChange();
+        LockMouse();
+
+        if (bl_mainCamera) SelectObject();
+        else objectSelected = null;
     }
 
     void PlayerMovement()
@@ -41,8 +49,11 @@ public class Movement : MonoBehaviour
         Quaternion cameraRotation = Quaternion.Euler(fl_rotation_x, 0, 0);
 
         transform.Translate(v3_movement);
-        transform.Rotate(v3_mouseMovement);
-        transform.GetChild(0).transform.localRotation = cameraRotation;
+        if (Cursor.lockState == CursorLockMode.Locked)
+        {
+            transform.Rotate(v3_mouseMovement);
+            transform.GetChild(0).transform.localRotation = cameraRotation;
+        }
     }
 
     void SelectObject()
@@ -51,6 +62,48 @@ public class Movement : MonoBehaviour
         if (Physics.Raycast(Camera.main.ScreenPointToRay(new Vector3(Camera.main.pixelWidth / 2, Camera.main.pixelHeight / 2)), out hit,  Mathf.Infinity))
         {
             objectSelected = hit.transform.gameObject;
+        }
+    }
+
+    void CameraChange()
+    {
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            if (bl_mainCamera) bl_mainCamera = false;
+            else bl_mainCamera = true;
+        }
+
+        if (bl_mainCamera)
+        {
+            overheadCamera.transform.GetChild(0).gameObject.SetActive(false);
+            transform.GetChild(0).gameObject.SetActive(true);
+        }
+
+        else
+        {
+            transform.GetChild(0).gameObject.SetActive(false);
+            overheadCamera.transform.GetChild(0).gameObject.SetActive(true);
+        }
+
+        overheadCamera.transform.position = new Vector3(transform.position.x,
+                                                        overheadCamera.transform.position.y,
+                                                        transform.position.z);
+    }
+
+    void LockMouse()
+    {
+        if (Input.GetKeyDown(KeyCode.Tab))
+        {
+            if (Cursor.lockState == CursorLockMode.Locked)
+            {
+                Cursor.lockState = CursorLockMode.None;
+                Cursor.visible = true;
+            }
+            else
+            {
+                Cursor.lockState = CursorLockMode.Locked;
+                Cursor.visible = false;
+            }
         }
     }
 }
